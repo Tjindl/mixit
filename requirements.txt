@@ -1,0 +1,9 @@
+# --- audio stack ---
+numpy>=1.24
+librosa>=0.10.2      # loading + resampling now; BPM / beat / key analysis in later stages
+soundfile>=0.12.1    # reads/writes WAV + FLAC, and decodes MP3 (bundled libsndfile >= 1.1)
+pydub>=0.25.1        # MP3 export -- it drives the separate `ffmpeg` program (see README)
+audioop-lts>=0.2.1; python_version >= "3.13"   # pydub needs `audioop`, which Python 3.13 removed
+
+# --- testing ---
+pytest>=7.0          # 7.0+ for the `pythonpath` setting in pytest.ini

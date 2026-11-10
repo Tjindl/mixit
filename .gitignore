@@ -1,0 +1,9 @@
+# Python
+.venv/
+__pycache__/
+.pytest_cache/
+
+# Audio: your songs and the mixes made from them (large files, often copyrighted)
+*.mp3
+*.wav
+*.flac
