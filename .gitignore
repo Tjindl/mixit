@@ -7,3 +7,14 @@ __pycache__/
 *.mp3
 *.wav
 *.flac
+
+# Analysis cache (rebuilt automatically; safe to delete)
+analysis_cache.json
+analysis_cache.json.tmp
+
+# The plan saved next to each mix (regenerated on every run)
+set_plan.json
+
+# demucs vocal stems (rebuilt automatically; safe to delete) and --cue-debug output
+stems/
+cue_debug/

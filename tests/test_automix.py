@@ -1,4 +1,8 @@
-"""End-to-end tests: generated songs on disk -> command-line tool -> mix file."""
+"""End-to-end tests: generated songs on disk -> command-line tool -> mix file.
+
+Smart ordering is the default since Stage 3, so tests about the order of the
+inputs ask for --order given.
+"""
 
 import re
 
@@ -13,7 +17,7 @@ from audio_io import SAMPLE_RATE
 def tracklist(stdout):
     """Parse the printed tracklist into (timestamp, title) pairs."""
     section = stdout.split("Tracklist")[-1]
-    return re.findall(r"^\s*\d+\.\s+(\S+)\s+(.+)$", section, flags=re.MULTILINE)
+    return re.findall(r"^\s*\d+\.\s+(\S+)\s+(\S+)", section, flags=re.MULTILINE)
 
 
 @pytest.fixture
@@ -30,7 +34,7 @@ def songs(tmp_path, sine):
 
 def test_mixes_a_folder_end_to_end(songs, tmp_path, capsys):
     out = tmp_path / "mix.wav"
-    assert automix.main([str(songs), "-o", str(out), "--crossfade", "1"]) == 0
+    assert automix.main([str(songs), "-o", str(out), "--crossfade", "1", "--order", "given"]) == 0
 
     audio, sr = sf.read(out)
     assert sr == SAMPLE_RATE and audio.shape[1] == 2
@@ -45,15 +49,16 @@ def test_mixes_a_folder_end_to_end(songs, tmp_path, capsys):
 
 
 def test_files_named_on_the_command_line_keep_their_order(songs, tmp_path, capsys):
-    args = [str(songs / "C_track.wav"), str(songs / "a_track.flac"), "-o", str(tmp_path / "mix.wav")]
+    args = [str(songs / "C_track.wav"), str(songs / "a_track.flac"), "-o", str(tmp_path / "mix.wav"),
+            "--order", "given"]
     assert automix.main(args) == 0
     assert [title for _, title in tracklist(capsys.readouterr().out)] == ["C_track", "a_track"]
 
 
 def test_a_previous_mix_in_the_songs_folder_is_not_mixed_in(songs, capsys):
     out = songs / "mix.wav"
-    automix.main([str(songs), "-o", str(out)])
-    automix.main([str(songs), "-o", str(out)])  # second run: mix.wav is now in the folder
+    automix.main([str(songs), "-o", str(out), "--order", "given"])
+    automix.main([str(songs), "-o", str(out), "--order", "given"])  # second run: mix.wav is now in the folder
     titles = [title for _, title in tracklist(capsys.readouterr().out)]
     assert titles == ["a_track", "b_track", "C_track"]
 

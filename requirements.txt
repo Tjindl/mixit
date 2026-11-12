@@ -1,9 +1,25 @@
 # --- audio stack ---
 numpy>=1.24
-librosa>=0.10.2      # loading + resampling now; BPM / beat / key analysis in later stages
+scipy>=1.10          # filters: the DJ EQ, bass swaps, the echo's low-pass sweep
+librosa>=0.10.2      # loading, resampling, beat tracking, chroma, MFCC, the phase-vocoder stretch
 soundfile>=0.12.1    # reads/writes WAV + FLAC, and decodes MP3 (bundled libsndfile >= 1.1)
 pydub>=0.25.1        # MP3 export -- it drives the separate `ffmpeg` program (see README)
 audioop-lts>=0.2.1; python_version >= "3.13"   # pydub needs `audioop`, which Python 3.13 removed
+pyrubberband>=0.4.0  # time-stretching through the separate `rubberband` program. Optional, but
+                     # ramp mode (the default) needs Rubber Band 3.0+; without it automix
+                     # falls back to --tempo-mode global (see README)
+matplotlib>=3.7      # --cue-debug's timeline pictures
+
+# --- optional: better analysis (see README) ---
+# essentia           # more accurate key detection: pip install essentia
+#                    # (no Windows builds; every release so far is a beta)
+# The next three are neural networks: they need PyTorch (pip installs it with them,
+# ~800 MB) and download a model the first time they run.
+# beat_this          # beats and downbeats:
+#                    #   pip install https://github.com/CPJKU/beat_this/archive/main.zip
+# demucs             # separates vocals, so two vocals aren't blended over each other: pip install demucs
+# allin1             # sections and their names: pip install allin1 (needs natten and madmom,
+#                    # which must be compiled; madmom doesn't build on Python 3.14 yet)
 
 # --- testing ---
 pytest>=7.0          # 7.0+ for the `pythonpath` setting in pytest.ini
