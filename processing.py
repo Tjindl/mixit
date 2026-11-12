@@ -7,6 +7,7 @@ and to reuse in later stages.
     trim_silence        cut the quiet bits off the start and end of a track
     normalize_loudness  turn each track up or down to the same average loudness
     prevent_clipping    scale the finished mix down if any peak would distort
+    click_sound         a short click, for marking beats (--clicks)
 
 Decibels
 --------
@@ -104,9 +105,23 @@ def trim_silence(
 
     Returns an empty array if the whole track is silent.
     """
+    start, end = non_silent_bounds(audio, threshold_db, frame_length)
+    return audio[start:end]
+
+
+def non_silent_bounds(
+    audio: np.ndarray,
+    threshold_db: float = SILENCE_THRESHOLD_DB,
+    frame_length: int = FRAME_LENGTH,
+) -> tuple[int, int]:
+    """Where the sound starts and ends: trim_silence() keeps audio[start:end].
+
+    Returns (0, 0) if the whole track is silent. The pipeline needs `start` to shift
+    beat times, which are measured from the start of the untrimmed file.
+    """
     n = len(audio)
     if n == 0:
-        return audio
+        return 0, 0
 
     # Pad with zeros to a whole number of frames, then reshape so each row holds
     # one frame (with both channels of that frame side by side in the same row).
@@ -117,13 +132,13 @@ def trim_silence(
 
     loudest = frame_rms.max()
     if loudest == 0:
-        return audio[:0]  # digital silence from start to finish
+        return 0, 0  # digital silence from start to finish
 
     # Convert the dB threshold into a ratio: -40 dB -> 0.01 x the loudest frame.
     loud_frames = np.flatnonzero(frame_rms > loudest * db_to_gain(threshold_db))
-    start = loud_frames[0] * frame_length
-    end = min(n, (loud_frames[-1] + 1) * frame_length)
-    return audio[start:end]
+    start = int(loud_frames[0]) * frame_length
+    end = min(n, (int(loud_frames[-1]) + 1) * frame_length)
+    return start, end
 
 
 def normalize_loudness(audio: np.ndarray, target_db: float = TARGET_RMS_DB) -> np.ndarray:
@@ -188,3 +203,14 @@ def prevent_clipping(audio: np.ndarray, ceiling_db: float = CEILING_DB) -> np.nd
     """
     gain = clipping_gain(audio, ceiling_db)
     return audio if gain == 1.0 else audio * gain
+
+
+def click_sound(sr: int, freq: float = 1500.0, level_db: float = -6.0) -> np.ndarray:
+    """A short, bright click (mono float32): a sine tone that dies away within 20 ms.
+
+    It starts at full level and decays exponentially (gone to 1% in ~20 ms), so it
+    marks a precise moment without blurring into the music.
+    """
+    t = np.arange(round(0.02 * sr)) / sr
+    envelope = np.exp(-t / 0.004)  # e^(-t / 4 ms): 1% left after ~18 ms
+    return (db_to_gain(level_db) * envelope * np.sin(2 * np.pi * freq * t)).astype(np.float32)
